@@ -1,3 +1,5 @@
+#|Author: anonmu|#
+
 (defvar *db* nil)
 
 (defun address-book (firstname lastname age email)
@@ -36,3 +38,28 @@
   (with-open-file (in filename)
     (with-standard-io-syntax
       (setf *db* (read in)))))
+
+(defun select (selector-fn)
+  (remove-if-not selector-fn *db*))
+
+(defun where (&key firstname lastname age email)
+  #'(lambda (nc)
+      (and
+       (if firstname  (equal  (getf nc :firstname) firstname)  t)
+       (if lastname   (equal  (getf nc :lastname)  lastname)   t)
+       (if age        (equal  (getf nc :age)       age)        t)
+       (if email      (equal  (getf nc :email)     email)      t))))
+
+(defun update (selector-fn &key firstname lastname age email)
+  (setf *db*
+        (mapcar
+         #'(lambda (row)
+             (when (funcall selector-fn row)
+               (if firstname   (setf (getf row :firstname) firstname))
+               (if lastname    (setf (getf row :lastname)  lastname))
+               (if age         (setf (getf row :age)       age))
+               (if email       (setf (getf row :email)     email)))
+             row) *db*)))
+
+(defun delete-rows (selector-fn)
+  (setf *db* (remove-if selector-fn *db*)))
